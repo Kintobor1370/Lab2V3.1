@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
@@ -16,11 +16,12 @@ public struct DataItem
     public DataItem(double x, double y, Vector2 v)
     { X = x; Y = y; VecVal = v; }
 
-    public double VectorAbs()
-    { return Sqrt(Pow(VecVal.X, 2) + Pow(VecVal.Y, 2)); }
-
     public string ToLongString(string format)
-    { return "X=" + String.Format(format, X) + ";  Y=" + String.Format(format, Y) + "\n"; }
+    {
+        double VecAbs = Sqrt(Pow(VecVal.X, 2) + Pow(VecVal.Y, 2));
+        return "X=" + String.Format(format, X) +"   Y=" + String.Format(format, Y) + "   Vector Value: " + 
+               String.Format(format, VecVal) + "   Vector Module: " + String.Format(format, VecAbs) +"\n";
+    }
 
     public override string ToString() { return "\n"; }
 }
@@ -123,10 +124,7 @@ public class V3DataList: V3Data
         Vector2 abs;
         foreach(DataItem Item in DataList)
         {
-            abs = Vector2.Abs(Item.VecVal);
-            info += Convert.ToString(n) + ")  X=" + String.Format(format, Item.X) +"   Y=" + 
-            String.Format(format, Item.Y) + "   Vector Value: " + String.Format(format, Item.VecVal) + "   Vector Module: " + 
-            String.Format(format, abs) +"\n";
+            info += Convert.ToString(n) + ")  " + Item.ToLongString(format);
             n++;
         }
         return ToString() + "List Info:\n" + info;
@@ -155,7 +153,7 @@ public class V3DataList: V3Data
             }
             sw.Close();
         }
-        catch(FileNotFoundException e)
+        catch(FileNotFoundException)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"\nEXCEPTION: FAILED SAVE ATTEMPT. FILE \"{filename}\" DOESN'T EXIST IN THE CURRENT DIRECTORY!\n");
@@ -190,7 +188,7 @@ public class V3DataList: V3Data
             }
             sr.Close();
         }
-        catch(FileNotFoundException e)
+        catch(FileNotFoundException)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"\nEXCEPTION: FAILED LOAD ATTEMPT. FILE \"{filename}\" DOESN'T EXIST IN THE CURRENT DIRECTORY!\n");
@@ -276,10 +274,10 @@ public class V3DataArray: V3Data
         for(int i=0; i<Xnum; i++)
             for(int j=0; j<Ynum; j++)
             {
-                abs = Vector2.Abs(InfoVec[i,j]);
+                double VecAbs = Sqrt(Pow(InfoVec[i,j].X, 2) + Pow(InfoVec[i,j].Y, 2));
                 str += Convert.ToString(n) + ".  X=" + String.Format(format, i*Xstep) + 
                 "   Y=" + String.Format(format, j*Ystep) + "  Vector Value: " + String.Format(format, InfoVec[i, j]) + 
-                "   Vector Module: " + String.Format(format, abs) + "\n";
+                "   Vector Module: " + String.Format(format, VecAbs) + "\n";
                 n++;
             }
         return str;
@@ -326,7 +324,7 @@ public class V3DataArray: V3Data
                 save.Close();
             }
         }
-        catch(FileNotFoundException e)
+        catch(FileNotFoundException)
         { 
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"\nEXCEPTION: FAILED SAVE ATTEMPT. FILE \"{filename}\" DOESN'T EXIST IN THE CURRENT DIRECTORY!\n");
@@ -364,7 +362,7 @@ public class V3DataArray: V3Data
                 load.Close();
             }
         }
-        catch(FileNotFoundException e)
+        catch(FileNotFoundException)
         { 
              Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"\nEXCEPTION: FAILED LOAD ATTEMPT. FILE \"{filename}\" DOESN'T EXIST IN THE CURRENT DIRECTORY!\n");
@@ -418,10 +416,10 @@ public class V3MainCollection
 
     public string ToLongString(string format)
     {
-        string str = "\n__________________________________COLLECTION ITEMS:__________________________________\n";
+        string str = "\n____________________________________COLLECTION ITEMS:___________________________________\n";
         foreach(V3Data Item in DataList)
             str += Item.ToLongString(format) + "\n";
-        return str + "__________________________________END OF COLLECTION.__________________________________\n";
+        return str + "___________________________________END OF COLLECTION.___________________________________\n";
     }
 
     public override string ToString()
@@ -436,6 +434,7 @@ public class V3MainCollection
     {
         get
         {
+//          Console.WriteLine(this.DataList.Count);
             if(this.DataList.Count == 0)
                 return double.NaN;
             
@@ -446,29 +445,32 @@ public class V3MainCollection
         }
     }
 
-//    public IEnumerable<float> Absolute
-//    {
-//        get
-//        {
-//            if(this.DataList.Count == 0)
-//                return null;
-//            
-//            List<V3Data> Buf = this.DataList;
-//            var Modules = DataList.Select(i => i.VectorAbs().Max() - i.VectorAbs().Min());
-//
-//            return Modules;
-//      }
-//    }
-
-    public IEnumerable<IGrouping<double, DataItem>> Grouping()
+    public IEnumerable<float> Absolute
     {
-        if(this.DataList.Count == 0)
-            return null;
+        get
+        {
+            if(this.DataList.Count == 0)
+                return null;
+            
+            var NonEmptyDataList = from i in DataList where i.Count > 0 select i;
+            var Modules = from i in NonEmptyDataList select (float)(i.Select(j => Sqrt(Pow(j.VecVal.X, 2) + Pow(j.VecVal.Y, 2))).Max() - i.Select(j => Sqrt(Pow(j.VecVal.X, 2) + Pow(j.VecVal.Y, 2))).Min());
 
-        var DataItems = from i in DataList from j in i select j;
-        var XGroups = DataItems.GroupBy(i => i.X);
+            return Modules;
+      }
+    }
 
-        return XGroups;
+    public IEnumerable<IGrouping<double, DataItem>> Grouping
+    {
+        get
+        {
+            if(this.DataList.Count == 0)
+                return null;
+
+            var DataItems = from i in DataList from j in i select j;
+            var XGroups = DataItems.GroupBy(i => i.X);
+
+            return XGroups;
+        }
     }
 }
 
@@ -487,30 +489,31 @@ public static class VecCalculator
 
 class Test
 {
-    static void SaveLoadObjects()
+    static void SaveLoadObjects(string OutputFormat)
     {
 //.....ПРОВЕРКА ЧТЕНИЯ/ЗАПИСИ СПИСКА         
         V3DataArray Temp = new V3DataArray("List save/load Test", DateTime.Now, 4, 3, 5, 2, new FdblVector2(VecCalculator.var1));
         V3DataList SaveLst = Temp;
+        string filename = "textfile.txt";
 
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("\n_________________________________________LIST:________________________________________");
         Console.ResetColor();
-        Console.WriteLine(SaveLst.ToLongString("{0:F3}"));
+        Console.WriteLine(SaveLst.ToLongString(OutputFormat));
         
-        if(V3DataList.SaveAsText("textfile.txt", SaveLst))
+        if(V3DataList.SaveAsText(filename, SaveLst))
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("________________________________LIST SAVED SUCCESSFULLY!_______________________________\n" +
-            "                                (check textfile.txt)\n\n");
+            $"                                (check {filename})\n\n");
             Console.ResetColor();
         }
 
         V3DataList LoadLst = new V3DataList(null, DateTime.Now);
 
-        if(V3DataList.LoadAsText("textfile.txt", ref LoadLst))
+        if(V3DataList.LoadAsText(filename, ref LoadLst))
         {
-            Console.WriteLine(LoadLst.ToLongString("{0:F3}"));
+            Console.WriteLine(LoadLst.ToLongString(OutputFormat));
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("_______________________________LIST LOADED SUCCESSFULLY!_______________________________\n");
             Console.ResetColor();
@@ -519,25 +522,26 @@ class Test
 
 //.....ПРОВЕРКА ЧТЕНИЯ/ЗАПИСИ СЕТКИ
         V3DataArray SaveAr = new V3DataArray("Array save/load Test", DateTime.Now, 5, 6, 8.2, 11.3, new FdblVector2(VecCalculator.var2));
+        filename = "binfile.bin";
 
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("\n_________________________________________ARRAY:________________________________________");
         Console.ResetColor();
-        Console.WriteLine(SaveAr.ToLongString("{0:F3}"));
+        Console.WriteLine(SaveAr.ToLongString(OutputFormat));
 
-        if(V3DataArray.SaveBinary("binfile.bin", SaveAr))
+        if(V3DataArray.SaveBinary(filename, SaveAr))
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("_______________________________ARRAY SAVED SUCCESSFULLY!_______________________________\n" +
-            "                                (check binfile.bin)\n\n");
+            $"                                (check {filename})\n\n");
             Console.ResetColor();
         }
 
         V3DataArray LoadAr = new V3DataArray(null, DateTime.Now);
 
-        if(V3DataArray.LoadBinary("binfile.bin", ref LoadAr))
+        if(V3DataArray.LoadBinary(filename, ref LoadAr))
         {
-            Console.WriteLine(LoadAr.ToLongString("{0:F3}"));
+            Console.WriteLine(LoadAr.ToLongString(OutputFormat));
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("_______________________________ARRAY LOADED SUCCESSFULLY!______________________________\n");
             Console.ResetColor();
@@ -545,36 +549,171 @@ class Test
 
 
 //.....ПРОВЕРКА ЧТЕНИЯ/ЗАПИСИ СПИСКА В НЕСУЩЕСТВУЮЩИЙ ФАЙЛ
-        if(V3DataList.SaveAsText("some-non-existent-file", SaveLst))
+        filename = "some-non-existent-file";
+
+        if(V3DataList.SaveAsText(filename, SaveLst))
         { Console.WriteLine("Miracles Happen!\n"); }
     
-        if(V3DataList.LoadAsText("some-non-existent-file", ref LoadLst))
+        if(V3DataList.LoadAsText(filename, ref LoadLst))
         { Console.WriteLine("Miracles Happen!\n"); }
 
 
 //.....ПРОВЕРКА ЧТЕНИЯ/ЗАПИСИ СЕТКИ В НЕСУЩЕСТВУЮЩИЙ ФАЙЛ
-        if(V3DataArray.SaveBinary("some-non-existent-file", SaveAr))
+        if(V3DataArray.SaveBinary(filename, SaveAr))
         { Console.WriteLine("Miracles Happen!\n"); }
     
-        if(V3DataArray.LoadBinary("some-non-existent-file", ref LoadAr))
+        if(V3DataArray.LoadBinary(filename, ref LoadAr))
         { Console.WriteLine("Miracles Happen!\n"); }
     }
 
-    static void TestLINQ()
+
+    static void TestLINQ(string OutputFormat)
     {
+//......СОЗДАНИЕ ЭЛЕМЕНТОВ ДЛЯ КОЛЛЕКЦИИ
+        V3DataList l1 = new V3DataList("List Entry #1", DateTime.Now);
+        l1.AddDefaults(7, new FdblVector2(VecCalculator.var1));
+        V3DataList l2 = new V3DataList("List Entry #2", DateTime.Now);
+        l2.AddDefaults(10, new FdblVector2(VecCalculator.var2));
+        V3DataList lempty = new V3DataList("List Entry #3", DateTime.Now);
+
+        V3DataArray a1 = new V3DataArray("Array entry #1", DateTime.Now, 6, 8, 1.5, 2.8, new FdblVector2(VecCalculator.var3));
+        V3DataArray a2 = new V3DataArray("Array entry #2", DateTime.Now, 11, 17, 2.24, 5.37, new FdblVector2(VecCalculator.var1));
+        V3DataArray aempty = new V3DataArray("Array entry #3", DateTime.Now);
+        
+//......СОЗДАНИЕ КОЛЛЕКЦИИ
+        V3MainCollection Collection = new V3MainCollection();
+        Collection.Add(a1);
+        Collection.Add(a2);
+        Collection.Add(aempty);
+        Collection.Add(l1);
+        Collection.Add(l2);
+        Collection.Add(lempty);
+
+//......СОЗДАНИЕ ПУСТОЙ КОЛЛЕКЦИИ
+        V3MainCollection EmptyCollection = new V3MainCollection();
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("\n__________________________________NON-EMPTY COLLECTION:_________________________________");
+        Console.ResetColor();
+        
+        Console.WriteLine(Collection.ToLongString(OutputFormat));
+        
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("________________________________________________________________________________________\n" +
+        "\n____________________________________EMPTY COLLECTION:___________________________________");
+        Console.ResetColor();
+
+        Console.WriteLine(EmptyCollection.ToLongString(OutputFormat));
+
+
+//......ВЫПОЛНЕНИЕ СВОЙСТВ LINQ
+//...1) СРЕДНЕЕ ЗНАЧЕНИЕ РАССТОЯНИЯ ОТ ТОЧЕК ИЗМЕРЕНИЯ ДО НАЧАЛА КООРДИНАТ
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("\n___________________________LINQ: AVERAGE DISTANCE CHECK:________________________________\n");
+        Console.ResetColor();
+
+//......ПРОВЕРКА НЕПУСТОЙ КОЛЛЕКЦИИ
+        Console.WriteLine("\nCHECKING NON-EMPTY COLLECTON...\n");
+        double Avrg = Collection.Avrg;
+        if(double.IsNaN(Avrg))
+            Console.WriteLine("!!!ERROR!!!\n");
+        else
+            Console.WriteLine($"AVERAGE MEASURING POINT-TO-ORIGIN POINT DISTANCE: {Avrg}\n");
+
+//......ПРОВЕРКА ПУСТОЙ КОЛЛЕКЦИИ
+        Console.WriteLine("\nCHECKING EMPTY COLLECTON...\n");
+        Avrg = EmptyCollection.Avrg;
+        if(!double.IsNaN(Avrg))
+            Console.WriteLine("!!!ERROR!!!\n");
+        else
+            Console.WriteLine("double.NaN WAS RETURNED\n");
+
+
+//...2) ПЕРЕЧИСЛЕНИЕ РАЗНОСТЕЙ МЕЖДУ МАКСИМАЛЬНЫМИ И МИНИМАЛЬНЫМИ ЗНАЧЕНИЯМИ МОДУЛЕЙ ПОЛЯ
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("\n________________________LINQ: MAX & MIN MODULES DIFFERENCE:_____________________________\n");
+        Console.ResetColor();
+
+//......ПРОВЕРКА НЕПУСТОЙ КОЛЛЕКЦИИ
+        Console.WriteLine("\nCHECKING NON-EMPTY COLLECTON...\n");
+        var ModuleDifs = Collection.Absolute;
+        if(ModuleDifs == null)
+            Console.WriteLine("!!!ERROR!!!\n");
+        else
+        {
+            int n = 1;
+            foreach(float i in ModuleDifs)
+            {
+                if(Collection[n-1].Count == 0)
+                    n++;
+                Console.WriteLine($"FOR COLLECTION {n}:  {i}");
+                n++;
+            }
+            Console.WriteLine();
+        }
+
+//......ПРОВЕРКА ПУСТОЙ КОЛЛЕКЦИИ
+        Console.WriteLine("\nCHECKING EMPTY COLLECTON...\n");
+        ModuleDifs = EmptyCollection.Absolute;
+        if(ModuleDifs != null)
+            Console.WriteLine("!!!ERROR!!!\n");
+        else
+            Console.WriteLine("null VALUE WAS RETURNED\n");
+
+
+//...3) ГРУППИРОВКА ВСЕХ РЕЗУЛЬТАТОВ ИЗМЕРЕНИЯ ПОЛЯ ПО КООРДИНАТЕ Х
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("_________________________________LINQ: GROUP BY X:______________________________________\n");
+        Console.ResetColor();
+
+//......ПРОВЕРКА НЕПУСТОЙ КОЛЛЕКЦИИ
+        Console.WriteLine("\nCHECKING NON-EMPTY COLLECTON...\n");
+        var ResultGroups = Collection.Grouping;
+        if(ResultGroups == null)
+            Console.WriteLine("!!!ERROR!!!\n");
+        else
+            foreach(IGrouping<double, DataItem> i in ResultGroups)
+            {
+                Console.WriteLine($"X = {i.Key}:");
+                foreach(var j in i)
+                    Console.Write($"    {j.ToLongString(OutputFormat)}");
+                Console.WriteLine();
+            }
+        Console.WriteLine();
+
+//......ПРОВЕРКА ПУСТОЙ КОЛЛЕКЦИИ
+        Console.WriteLine("\nCHECKING EMPTY COLLECTON...\n");
+        ResultGroups = EmptyCollection.Grouping;
+        if(ResultGroups != null)
+            Console.WriteLine("!!!ERROR!!!\n");
+        else
+            Console.WriteLine("null VALUE WAS RETURNED\n");
 
     }
+
     
     static void Main()
     {
+        string format = "{0:F3}";
+
         Console.ForegroundColor = ConsoleColor.Blue;
-        Console.WriteLine("\n..........................SAVING / LOADING DATA TESTS BEGIN!...........................");
+        Console.WriteLine("\n.......................INITIANING SAVING / LOADING DATA TESTS..........................");
         Console.ResetColor();
 
-        SaveLoadObjects();
+        SaveLoadObjects(format);
 
         Console.ForegroundColor = ConsoleColor.Blue;
         Console.WriteLine("..................................TESTING COMPLETE!....................................\n");
+        Console.ResetColor();
+
+        Console.ForegroundColor = ConsoleColor.Blue;
+        Console.WriteLine("\n\n.................................INITIATING LINQ TESTS:.................................");
+        Console.ResetColor();
+
+        TestLINQ(format);
+
+        Console.ForegroundColor = ConsoleColor.Blue;
+        Console.WriteLine("..................................LINQ TESTS COMPLETE!..................................\n");
         Console.ResetColor();
     }
 }
