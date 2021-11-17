@@ -121,7 +121,6 @@ public class V3DataList: V3Data
     {
         string info = null;
         int n = 1;
-        Vector2 abs;
         foreach(DataItem Item in DataList)
         {
             info += Convert.ToString(n) + ")  " + Item.ToLongString(format);
@@ -269,13 +268,12 @@ public class V3DataArray: V3Data
     public override string ToLongString(string format)
     {
         string str = this.ToString() + "\nNodes info:\n";
-        Vector2 abs;
         int n = 1;
         for(int i=0; i<Xnum; i++)
             for(int j=0; j<Ynum; j++)
             {
                 double VecAbs = Sqrt(Pow(InfoVec[i,j].X, 2) + Pow(InfoVec[i,j].Y, 2));
-                str += Convert.ToString(n) + ".  X=" + String.Format(format, i*Xstep) + 
+                str += $"{n}.  X=" + String.Format(format, i*Xstep) + 
                 "   Y=" + String.Format(format, j*Ystep) + "  Vector Value: " + String.Format(format, InfoVec[i, j]) + 
                 "   Vector Module: " + String.Format(format, VecAbs) + "\n";
                 n++;
@@ -505,7 +503,7 @@ class Test
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("________________________________LIST SAVED SUCCESSFULLY!_______________________________\n" +
-            $"                                (check {filename})\n\n");
+            $"                                (check {filename})\n\n\n_________________________________LOADING LIST FROM FILE________________________________\n");
             Console.ResetColor();
         }
 
@@ -533,7 +531,7 @@ class Test
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("_______________________________ARRAY SAVED SUCCESSFULLY!_______________________________\n" +
-            $"                                (check {filename})\n\n");
+            $"                                (check {filename})\n\n\n_________________________________LOADING ARRAY FROM FILE_______________________________\n");
             Console.ResetColor();
         }
 
@@ -626,7 +624,7 @@ class Test
         if(!double.IsNaN(Avrg))
             Console.WriteLine("!!!ERROR!!!\n");
         else
-            Console.WriteLine("double.NaN WAS RETURNED\n");
+            Console.WriteLine("    double.NaN WAS RETURNED\n");
 
 
 //...2) ПЕРЕЧИСЛЕНИЕ РАЗНОСТЕЙ МЕЖДУ МАКСИМАЛЬНЫМИ И МИНИМАЛЬНЫМИ ЗНАЧЕНИЯМИ МОДУЛЕЙ ПОЛЯ
@@ -658,7 +656,7 @@ class Test
         if(ModuleDifs != null)
             Console.WriteLine("!!!ERROR!!!\n");
         else
-            Console.WriteLine("null VALUE WAS RETURNED\n");
+            Console.WriteLine("    null VALUE WAS RETURNED\n");
 
 
 //...3) ГРУППИРОВКА ВСЕХ РЕЗУЛЬТАТОВ ИЗМЕРЕНИЯ ПОЛЯ ПО КООРДИНАТЕ Х
@@ -687,7 +685,7 @@ class Test
         if(ResultGroups != null)
             Console.WriteLine("!!!ERROR!!!\n");
         else
-            Console.WriteLine("null VALUE WAS RETURNED\n");
+            Console.WriteLine("    null VALUE WAS RETURNED\n");
 
     }
 
